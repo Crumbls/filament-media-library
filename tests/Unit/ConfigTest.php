@@ -12,6 +12,8 @@ test('config has all expected top-level keys', function (): void {
         'image_conversions',
         'collections',
         'models',
+        'routes',
+        'tenancy',
         'filament',
     ]);
 });

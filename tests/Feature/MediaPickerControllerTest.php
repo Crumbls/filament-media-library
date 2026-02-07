@@ -103,7 +103,7 @@ test('upload rejects oversized files', function (): void {
     $response->assertOk();
     expect($response->json('uploaded'))->toHaveCount(0);
     expect($response->json('rejected'))->toHaveCount(1);
-    expect($response->json('rejected.0.reason'))->toBe('File exceeds maximum size');
+    expect($response->json('rejected.0.reason'))->toBe(__('filament-media-library::media-library.validation.file_too_large'));
 });
 
 test('upload rejects invalid mime types', function (): void {
@@ -118,7 +118,7 @@ test('upload rejects invalid mime types', function (): void {
     $response->assertOk();
     expect($response->json('uploaded'))->toHaveCount(0);
     expect($response->json('rejected'))->toHaveCount(1);
-    expect($response->json('rejected.0.reason'))->toBe('File type not accepted');
+    expect($response->json('rejected.0.reason'))->toBe(__('filament-media-library::media-library.validation.type_not_accepted'));
 });
 
 test('upload requires authentication', function (): void {

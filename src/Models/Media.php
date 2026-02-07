@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace Crumbls\FilamentMediaLibrary\Models;
 
 use Crumbls\FilamentMediaLibrary\Database\Factories\MediaFactory;
+use Crumbls\FilamentMediaLibrary\Events\MediaCreated;
+use Crumbls\FilamentMediaLibrary\Events\MediaDeleted;
+use Crumbls\FilamentMediaLibrary\Events\MediaUpdated;
+use Crumbls\FilamentMediaLibrary\Scopes\TenantScope;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +36,7 @@ class Media extends Model implements HasMedia
         'description',
         'disk',
         'uploaded_by',
+        'tenant_id',
     ];
 
     /** @var array<string, string> */
@@ -45,6 +51,8 @@ class Media extends Model implements HasMedia
 
     protected static function booted(): void
     {
+        static::addGlobalScope(new TenantScope);
+
         static::creating(function (Media $media): void {
             if (empty($media->uuid)) {
                 $media->uuid = (string) Str::uuid();
@@ -53,7 +61,15 @@ class Media extends Model implements HasMedia
             if (empty($media->disk)) {
                 $media->disk = config('filament-media-library.disk', 'public');
             }
+
+            if (empty($media->tenant_id) && TenantScope::shouldScope()) {
+                $media->tenant_id = TenantScope::resolveTenantId();
+            }
         });
+
+        static::created(fn (Media $media) => event(new MediaCreated($media)));
+        static::updated(fn (Media $media) => event(new MediaUpdated($media)));
+        static::deleted(fn (Media $media) => event(new MediaDeleted($media)));
     }
 
     public function scopeSearch(Builder $query, string $search): Builder
@@ -258,5 +274,17 @@ class Media extends Model implements HasMedia
         ];
 
         return $map[$mimeType] ?? null;
+    }
+
+    public function tenant(): BelongsTo
+    {
+        $tenantModel = Filament::getTenantModel();
+        $column = config('filament-media-library.tenancy.column', 'tenant_id');
+
+        if (! $tenantModel) {
+            return $this->belongsTo(self::class, 'id', 'id');
+        }
+
+        return $this->belongsTo($tenantModel, $column);
     }
 }

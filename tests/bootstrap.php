@@ -1,6 +1,17 @@
 <?php
 
-require_once __DIR__.'/../../../vendor/autoload.php';
+$paths = [
+    __DIR__.'/../vendor/autoload.php',
+    __DIR__.'/../../../vendor/autoload.php',
+];
+
+foreach ($paths as $path) {
+    if (file_exists($path)) {
+        require_once $path;
+
+        break;
+    }
+}
 
 // Register the package's test namespace since autoload-dev isn't loaded by the host app
 spl_autoload_register(function (string $class): void {

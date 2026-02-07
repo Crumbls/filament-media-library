@@ -17,9 +17,16 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('disk')->default('public');
             $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('tenant_id')->nullable();
             $table->timestamps();
 
             $table->index('created_at');
+            $table->index('tenant_id');
         });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('media_library');
     }
 };

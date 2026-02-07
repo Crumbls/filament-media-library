@@ -21,4 +21,9 @@ return new class extends Migration
             $table->index('order');
         });
     }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('mediables');
+    }
 };

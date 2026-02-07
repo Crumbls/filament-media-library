@@ -21,6 +21,16 @@ return [
 
     'routes' => [
         'enabled' => true,
+        'upload_throttle' => [
+            'enabled' => true,
+            'max_attempts' => 30,
+            'decay_minutes' => 1,
+        ],
+    ],
+
+    'tenancy' => [
+        'enabled' => null,
+        'column' => 'tenant_id',
     ],
 
     'filament' => [

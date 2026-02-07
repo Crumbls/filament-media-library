@@ -30,4 +30,9 @@ class MediaFactory extends Factory
     {
         return $this->state(['uploaded_by' => $userId]);
     }
+
+    public function forTenant(int $tenantId): static
+    {
+        return $this->state(['tenant_id' => $tenantId]);
+    }
 }

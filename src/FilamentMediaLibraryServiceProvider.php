@@ -7,7 +7,10 @@ namespace Crumbls\FilamentMediaLibrary;
 use Crumbls\FilamentMediaLibrary\Http\Controllers\MediaPickerController;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -46,6 +49,7 @@ class FilamentMediaLibraryServiceProvider extends ServiceProvider
         ], 'filament-media-library-assets');
 
         $this->registerGates();
+        $this->registerRateLimiters();
 
         if (config('filament-media-library.routes.enabled', true)) {
             $this->registerRoutes();
@@ -61,6 +65,23 @@ class FilamentMediaLibraryServiceProvider extends ServiceProvider
         }
     }
 
+    private function registerRateLimiters(): void
+    {
+        RateLimiter::for('filament-media-library-upload', function (Request $request) {
+            $throttle = config('filament-media-library.routes.upload_throttle', []);
+
+            if (empty($throttle['enabled'])) {
+                return Limit::none();
+            }
+
+            $maxAttempts = (int) ($throttle['max_attempts'] ?? 30);
+            $decayMinutes = (int) ($throttle['decay_minutes'] ?? 1);
+
+            return Limit::perMinutes($decayMinutes, $maxAttempts)
+                ->by($request->user()?->getAuthIdentifier() ?: $request->ip());
+        });
+    }
+
     private function registerRoutes(): void
     {
         Route::middleware(['web', 'auth'])
@@ -69,6 +90,7 @@ class FilamentMediaLibraryServiceProvider extends ServiceProvider
                 Route::get('media-picker', [MediaPickerController::class, 'index'])
                     ->name('filament-media-library.media-picker');
                 Route::post('media-picker/upload', [MediaPickerController::class, 'upload'])
+                    ->middleware('throttle:filament-media-library-upload')
                     ->name('filament-media-library.media-picker.upload');
                 Route::get('media-picker/{media}', [MediaPickerController::class, 'show'])
                     ->name('filament-media-library.media-picker.show');
