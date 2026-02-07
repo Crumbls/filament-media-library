@@ -83,6 +83,8 @@ class ListMedia extends ListRecords
         $rejected = [];
 
         foreach ($this->uploads as $file) {
+            $media = null;
+
             if (! $file instanceof TemporaryUploadedFile) {
                 continue;
             }
@@ -162,13 +164,7 @@ class ListMedia extends ListRecords
         $query = Media::query()->with('media');
 
         if ($this->gridSearch) {
-            $escaped = str_replace(['%', '_'], ['\%', '\_'], $this->gridSearch);
-            $query->where(function ($q) use ($escaped): void {
-                $q->where('title', 'like', "%{$escaped}%")
-                    ->orWhere('alt_text', 'like', "%{$escaped}%")
-                    ->orWhere('caption', 'like', "%{$escaped}%")
-                    ->orWhere('description', 'like', "%{$escaped}%");
-            });
+            $query->search($this->gridSearch);
         }
 
         if ($this->filterType === 'image') {

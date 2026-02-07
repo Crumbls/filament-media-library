@@ -87,13 +87,7 @@ class MediaPicker extends Field
             ->with('media')
             ->whereIn('id', $ids)
             ->get()
-            ->map(fn (Media $media) => [
-                'id' => $media->id,
-                'title' => $media->title ?? $media->file_name,
-                'thumbnail_url' => $media->thumbnail_url,
-                'file_name' => $media->file_name,
-                'mime_type' => $media->mime_type,
-            ])
+            ->map(fn (Media $m) => $m->toPickerArray())
             ->toArray();
     }
 
@@ -102,13 +96,7 @@ class MediaPicker extends Field
         $query = Media::query()->with('media');
 
         if ($search) {
-            $escaped = str_replace(['%', '_'], ['\%', '\_'], $search);
-            $query->where(function ($q) use ($escaped): void {
-                $q->where('title', 'like', "%{$escaped}%")
-                    ->orWhere('alt_text', 'like', "%{$escaped}%")
-                    ->orWhere('caption', 'like', "%{$escaped}%")
-                    ->orWhere('description', 'like', "%{$escaped}%");
-            });
+            $query->search($search);
         }
 
         $query->orderByDesc('created_at');
@@ -116,13 +104,7 @@ class MediaPicker extends Field
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         return [
-            'data' => $paginator->getCollection()->map(fn (Media $media) => [
-                'id' => $media->id,
-                'title' => $media->title ?? $media->file_name,
-                'thumbnail_url' => $media->thumbnail_url,
-                'file_name' => $media->file_name,
-                'mime_type' => $media->mime_type,
-            ])->toArray(),
+            'data' => $paginator->getCollection()->map(fn (Media $m) => $m->toPickerArray())->toArray(),
             'has_more' => $paginator->hasMorePages(),
             'total' => $paginator->total(),
         ];

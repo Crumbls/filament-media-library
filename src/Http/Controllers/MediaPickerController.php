@@ -17,18 +17,12 @@ class MediaPickerController extends Controller
         $search = $request->string('search', '')->toString();
         $filterType = $request->string('type', '')->toString();
         $page = $request->integer('page', 1);
-        $perPage = $request->integer('per_page', 24);
+        $perPage = min($request->integer('per_page', 24), 100);
 
         $query = Media::query()->with('media');
 
         if ($search) {
-            $escaped = str_replace(['%', '_'], ['\%', '\_'], $search);
-            $query->where(function ($q) use ($escaped): void {
-                $q->where('title', 'like', "%{$escaped}%")
-                    ->orWhere('alt_text', 'like', "%{$escaped}%")
-                    ->orWhere('caption', 'like', "%{$escaped}%")
-                    ->orWhere('description', 'like', "%{$escaped}%");
-            });
+            $query->search($search);
         }
 
         if ($filterType === 'image') {
@@ -44,13 +38,7 @@ class MediaPickerController extends Controller
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
-            'data' => $paginator->getCollection()->map(fn (Media $media) => [
-                'id' => $media->id,
-                'title' => $media->title ?? $media->file_name,
-                'thumbnail_url' => $media->thumbnail_url,
-                'file_name' => $media->file_name,
-                'mime_type' => $media->mime_type,
-            ])->toArray(),
+            'data' => $paginator->getCollection()->map(fn (Media $m) => $m->toPickerArray())->toArray(),
             'has_more' => $paginator->hasMorePages(),
             'total' => $paginator->total(),
         ]);
@@ -71,6 +59,8 @@ class MediaPickerController extends Controller
         $rejected = [];
 
         foreach ($files as $file) {
+            $media = null;
+
             if (! $file || ! $file->isValid()) {
                 continue;
             }
@@ -103,13 +93,7 @@ class MediaPickerController extends Controller
 
                 $media->load('media');
 
-                $uploaded[] = [
-                    'id' => $media->id,
-                    'title' => $media->title ?? $media->file_name,
-                    'thumbnail_url' => $media->thumbnail_url,
-                    'file_name' => $media->file_name,
-                    'mime_type' => $media->mime_type,
-                ];
+                $uploaded[] = $media->toPickerArray();
             } catch (\Throwable $e) {
                 $rejected[] = ['name' => $originalName, 'reason' => 'Upload failed'];
 
@@ -125,18 +109,18 @@ class MediaPickerController extends Controller
         ]);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Media $media): JsonResponse
     {
-        $media = Media::with('media')->findOrFail($id);
+        $media->load('media');
 
         return response()->json([
             'data' => $this->formatMediaDetail($media),
         ]);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(Request $request, Media $media): JsonResponse
     {
-        $media = Media::with('media')->findOrFail($id);
+        $media->load('media');
 
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
@@ -152,9 +136,8 @@ class MediaPickerController extends Controller
         ]);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Media $media): JsonResponse
     {
-        $media = Media::findOrFail($id);
         $media->clearMediaCollection('default');
         $media->forceDelete();
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Crumbls\FilamentMediaLibrary\Models;
 
 use Crumbls\FilamentMediaLibrary\Database\Factories\MediaFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -55,6 +56,29 @@ class Media extends Model implements HasMedia
                 $media->disk = config('filament-media-library.disk', 'public');
             }
         });
+    }
+
+    public function scopeSearch(Builder $query, string $search): Builder
+    {
+        $escaped = str_replace(['%', '_'], ['\%', '\_'], $search);
+
+        return $query->where(function ($q) use ($escaped): void {
+            $q->where('title', 'like', "%{$escaped}%")
+                ->orWhere('alt_text', 'like', "%{$escaped}%")
+                ->orWhere('caption', 'like', "%{$escaped}%")
+                ->orWhere('description', 'like', "%{$escaped}%");
+        });
+    }
+
+    public function toPickerArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'title' => $this->title ?? $this->file_name,
+            'thumbnail_url' => $this->thumbnail_url,
+            'file_name' => $this->file_name,
+            'mime_type' => $this->mime_type,
+        ];
     }
 
     public function uploadedBy(): BelongsTo

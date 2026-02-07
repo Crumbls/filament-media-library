@@ -22,7 +22,6 @@ class MediaFactory extends Factory
             'alt_text' => fake()->sentence(),
             'caption' => fake()->optional()->sentence(),
             'description' => fake()->optional()->paragraph(),
-            'disk' => 'public',
             'uploaded_by' => null,
         ];
     }
