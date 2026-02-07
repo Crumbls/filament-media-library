@@ -190,6 +190,52 @@ MediaPicker::make('hero_image_id')
 
 The picker opens a modal with search, pagination, and thumbnail previews. Selected media is stored as an ID (single) or array of IDs (multiple) on the model.
 
+#### Database Column Requirements
+
+The MediaPicker stores a `media_library.id` reference directly on your model's table. You must ensure:
+
+1. **The column exists** -- Add a nullable unsigned big integer column for the field name you pass to `MediaPicker::make()`.
+2. **The column is fillable** -- Add the column name to your model's `$fillable` array.
+
+Example migration for adding an `avatar` column to a `users` table:
+
+```php
+Schema::table('users', function (Blueprint $table) {
+    $table->unsignedBigInteger('avatar')->nullable();
+
+    $table->foreign('avatar')
+        ->references('id')
+        ->on('media_library')
+        ->nullOnDelete();
+});
+```
+
+Then in your model:
+
+```php
+protected $fillable = [
+    // ...
+    'avatar',
+];
+```
+
+If you have an accessor on the same column (e.g., `getAvatarAttribute()`), remove it -- the MediaPicker needs the raw integer ID during form hydration. Use a separate method to resolve the media URL:
+
+```php
+use Crumbls\FilamentMediaLibrary\Models\Media;
+
+public function getAvatarUrl(): ?string
+{
+    if (! $this->avatar) {
+        return null;
+    }
+
+    $media = Media::with('media')->find($this->avatar);
+
+    return $media?->thumbnail_url;
+}
+```
+
 ### MediaColumn Table Column
 
 Display media thumbnails in Filament tables:
@@ -383,7 +429,7 @@ vendor/bin/phpstan analyse --configuration=packages/filament-media-library/phpst
 
 ### Testing
 
-The package uses [Pest](https://pestphp.com/) with 179 tests:
+The package uses [Pest](https://pestphp.com/) with 197 tests:
 
 ```bash
 vendor/bin/pest --test-directory packages/filament-media-library/tests --configuration packages/filament-media-library/phpunit.xml

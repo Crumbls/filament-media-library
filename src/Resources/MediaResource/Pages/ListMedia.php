@@ -7,11 +7,11 @@ namespace Crumbls\FilamentMediaLibrary\Resources\MediaResource\Pages;
 use Crumbls\FilamentMediaLibrary\Models\Media;
 use Crumbls\FilamentMediaLibrary\Resources\MediaResource;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -95,22 +95,30 @@ class ListMedia extends ListRecords
                 continue;
             }
 
-            if (! $this->mimeTypeMatchesAccepted($file->getMimeType() ?? '', $acceptedTypes)) {
+            if (! Media::mimeTypeMatchesAccepted($file->getMimeType() ?? '', $acceptedTypes)) {
                 $rejected[] = ['name' => $originalName, 'reason' => 'File type not accepted'];
 
                 continue;
             }
 
-            $safeName = $this->sanitizeFileName($originalName);
+            $safeName = Media::sanitizeFileName($originalName, $file->getMimeType());
 
-            $media = Media::create([
-                'title' => pathinfo($originalName, PATHINFO_FILENAME),
-                'uploaded_by' => Auth::id(),
-            ]);
+            try {
+                $media = Media::create([
+                    'title' => pathinfo($originalName, PATHINFO_FILENAME),
+                    'uploaded_by' => Auth::id(),
+                ]);
 
-            $media->addMedia($file->getRealPath())
-                ->usingFileName($safeName)
-                ->toMediaCollection('default');
+                $media->addMedia($file->getRealPath())
+                    ->usingFileName($safeName)
+                    ->toMediaCollection('default');
+            } catch (\Throwable $e) {
+                $rejected[] = ['name' => $originalName, 'reason' => 'Upload failed'];
+
+                if (isset($media) && $media->exists) {
+                    $media->forceDelete();
+                }
+            }
         }
 
         $this->uploads = [];
@@ -121,39 +129,6 @@ class ListMedia extends ListRecords
         }
 
         $this->dispatch('fml-uploads-complete');
-    }
-
-    protected function mimeTypeMatchesAccepted(string $mimeType, array $acceptedTypes): bool
-    {
-        foreach ($acceptedTypes as $pattern) {
-            if ($pattern === $mimeType) {
-                return true;
-            }
-
-            if (str_contains($pattern, '/*')) {
-                $prefix = Str::before($pattern, '/*');
-
-                if (str_starts_with($mimeType, "{$prefix}/")) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    protected function sanitizeFileName(string $name): string
-    {
-        $extension = pathinfo($name, PATHINFO_EXTENSION);
-        $filename = pathinfo($name, PATHINFO_FILENAME);
-
-        $slug = Str::slug($filename);
-
-        if ($slug === '') {
-            $slug = 'file';
-        }
-
-        return "{$slug}.{$extension}";
     }
 
     public function updatedEditedImage(): void
@@ -187,11 +162,12 @@ class ListMedia extends ListRecords
         $query = Media::query()->with('media');
 
         if ($this->gridSearch) {
-            $query->where(function ($q): void {
-                $q->where('title', 'like', "%{$this->gridSearch}%")
-                    ->orWhere('alt_text', 'like', "%{$this->gridSearch}%")
-                    ->orWhere('caption', 'like', "%{$this->gridSearch}%")
-                    ->orWhere('description', 'like', "%{$this->gridSearch}%");
+            $escaped = str_replace(['%', '_'], ['\%', '\_'], $this->gridSearch);
+            $query->where(function ($q) use ($escaped): void {
+                $q->where('title', 'like', "%{$escaped}%")
+                    ->orWhere('alt_text', 'like', "%{$escaped}%")
+                    ->orWhere('caption', 'like', "%{$escaped}%")
+                    ->orWhere('description', 'like', "%{$escaped}%");
             });
         }
 
@@ -259,6 +235,11 @@ class ListMedia extends ListRecords
             'caption' => $this->editCaption,
             'description' => $this->editDescription,
         ]);
+
+        Notification::make()
+            ->title('Media details saved')
+            ->success()
+            ->send();
 
         $this->dispatch('fml-detail-saved');
     }

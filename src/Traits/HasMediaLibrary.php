@@ -7,6 +7,7 @@ namespace Crumbls\FilamentMediaLibrary\Traits;
 use Crumbls\FilamentMediaLibrary\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 trait HasMediaLibrary
 {
@@ -72,9 +73,11 @@ trait HasMediaLibrary
      */
     public function syncMedia(array $mediaIds, string $collection = 'default'): void
     {
-        $this->mediaInCollection($collection)->detach();
+        DB::transaction(function () use ($mediaIds, $collection): void {
+            $this->mediaInCollection($collection)->detach();
 
-        $this->attachMediaMany($mediaIds, $collection);
+            $this->attachMediaMany($mediaIds, $collection);
+        });
     }
 
     public function getMediaByCollection(string $collection = 'default'): Collection

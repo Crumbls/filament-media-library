@@ -373,88 +373,53 @@ test('saveMediaDetail dispatches fml-detail-saved event', function (): void {
 // --- MIME type validation ---
 
 test('mimeTypeMatchesAccepted matches exact types', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'mimeTypeMatchesAccepted');
-
-    expect($method->invoke($component, 'application/pdf', ['application/pdf']))->toBeTrue();
-    expect($method->invoke($component, 'application/pdf', ['image/*']))->toBeFalse();
+    expect(Media::mimeTypeMatchesAccepted('application/pdf', ['application/pdf']))->toBeTrue();
+    expect(Media::mimeTypeMatchesAccepted('application/pdf', ['image/*']))->toBeFalse();
 });
 
 test('mimeTypeMatchesAccepted matches wildcard types', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'mimeTypeMatchesAccepted');
-
-    expect($method->invoke($component, 'image/png', ['image/*']))->toBeTrue();
-    expect($method->invoke($component, 'image/jpeg', ['image/*']))->toBeTrue();
-    expect($method->invoke($component, 'video/mp4', ['image/*']))->toBeFalse();
+    expect(Media::mimeTypeMatchesAccepted('image/png', ['image/*']))->toBeTrue();
+    expect(Media::mimeTypeMatchesAccepted('image/jpeg', ['image/*']))->toBeTrue();
+    expect(Media::mimeTypeMatchesAccepted('video/mp4', ['image/*']))->toBeFalse();
 });
 
 test('mimeTypeMatchesAccepted matches against multiple patterns', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'mimeTypeMatchesAccepted');
     $accepted = ['image/*', 'video/*', 'application/pdf'];
 
-    expect($method->invoke($component, 'image/png', $accepted))->toBeTrue();
-    expect($method->invoke($component, 'video/mp4', $accepted))->toBeTrue();
-    expect($method->invoke($component, 'application/pdf', $accepted))->toBeTrue();
-    expect($method->invoke($component, 'application/exe', $accepted))->toBeFalse();
+    expect(Media::mimeTypeMatchesAccepted('image/png', $accepted))->toBeTrue();
+    expect(Media::mimeTypeMatchesAccepted('video/mp4', $accepted))->toBeTrue();
+    expect(Media::mimeTypeMatchesAccepted('application/pdf', $accepted))->toBeTrue();
+    expect(Media::mimeTypeMatchesAccepted('application/exe', $accepted))->toBeFalse();
 });
 
 test('mimeTypeMatchesAccepted rejects empty mime type', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'mimeTypeMatchesAccepted');
-
-    expect($method->invoke($component, '', ['image/*']))->toBeFalse();
+    expect(Media::mimeTypeMatchesAccepted('', ['image/*']))->toBeFalse();
 });
 
 // --- Filename sanitization ---
 
 test('sanitizeFileName removes special characters', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'sanitizeFileName');
-
-    expect($method->invoke($component, 'my file (1).jpg'))->toBe('my-file-1.jpg');
+    expect(Media::sanitizeFileName('my file (1).jpg'))->toBe('my-file-1.jpg');
 });
 
 test('sanitizeFileName removes path traversal', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'sanitizeFileName');
-
-    expect($method->invoke($component, '../../etc/passwd.txt'))->toBe('passwd.txt');
-    expect($method->invoke($component, '../malicious.php'))->toBe('malicious.php');
+    expect(Media::sanitizeFileName('../../etc/passwd.txt'))->toBe('passwd.txt');
+    expect(Media::sanitizeFileName('../malicious.php'))->toBe('malicious.php');
 });
 
 test('sanitizeFileName handles empty filename', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'sanitizeFileName');
-
-    expect($method->invoke($component, '.jpg'))->toBe('file.jpg');
+    expect(Media::sanitizeFileName('.jpg'))->toBe('file.jpg');
 });
 
 test('sanitizeFileName strips double extensions', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'sanitizeFileName');
-
-    $result = $method->invoke($component, 'shell.php.jpg');
+    $result = Media::sanitizeFileName('shell.php.jpg');
 
     expect($result)->not->toContain('.php');
     expect(str_ends_with($result, '.jpg'))->toBeTrue();
 });
 
 test('sanitizeFileName preserves normal filenames', function (): void {
-    $component = Livewire::test(ListMedia::class)->instance();
-
-    $method = new ReflectionMethod($component, 'sanitizeFileName');
-
-    expect($method->invoke($component, 'my-photo.png'))->toBe('my-photo.png');
+    expect(Media::sanitizeFileName('my-photo.png'))->toBe('my-photo.png');
 });
 
 // --- Validation rules on saveMediaDetail ---

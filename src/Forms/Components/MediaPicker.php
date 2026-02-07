@@ -102,11 +102,12 @@ class MediaPicker extends Field
         $query = Media::query()->with('media');
 
         if ($search) {
-            $query->where(function ($q) use ($search): void {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('alt_text', 'like', "%{$search}%")
-                    ->orWhere('caption', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
+            $escaped = str_replace(['%', '_'], ['\%', '\_'], $search);
+            $query->where(function ($q) use ($escaped): void {
+                $q->where('title', 'like', "%{$escaped}%")
+                    ->orWhere('alt_text', 'like', "%{$escaped}%")
+                    ->orWhere('caption', 'like', "%{$escaped}%")
+                    ->orWhere('description', 'like', "%{$escaped}%");
             });
         }
 
