@@ -19,6 +19,10 @@ return [
         'media' => \Crumbls\FilamentMediaLibrary\Models\Media::class,
     ],
 
+    'routes' => [
+        'enabled' => true,
+    ],
+
     'filament' => [
         'navigation_group' => null,
         'navigation_icon' => 'heroicon-o-photo',

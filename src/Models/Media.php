@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -21,7 +20,6 @@ class Media extends Model implements HasMedia
     use HasFactory;
 
     use InteractsWithMedia;
-    use SoftDeletes;
 
     protected $table = 'media_library';
 
@@ -68,6 +66,20 @@ class Media extends Model implements HasMedia
                 ->orWhere('caption', 'like', "%{$escaped}%")
                 ->orWhere('description', 'like', "%{$escaped}%");
         });
+    }
+
+    public function scopeOfType(Builder $query, string $type): Builder
+    {
+        if (! $type) {
+            return $query;
+        }
+
+        return match ($type) {
+            'image' => $query->whereHas('media', fn ($q) => $q->where('mime_type', 'like', 'image/%')),
+            'video' => $query->whereHas('media', fn ($q) => $q->where('mime_type', 'like', 'video/%')),
+            'document' => $query->whereHas('media', fn ($q) => $q->where('mime_type', 'not like', 'image/%')->where('mime_type', 'not like', 'video/%')),
+            default => $query,
+        };
     }
 
     public function toPickerArray(): array

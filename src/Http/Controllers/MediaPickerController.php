@@ -9,11 +9,14 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class MediaPickerController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        Gate::authorize('media-library.viewAny');
+
         $search = $request->string('search', '')->toString();
         $filterType = $request->string('type', '')->toString();
         $page = $request->integer('page', 1);
@@ -25,14 +28,7 @@ class MediaPickerController extends Controller
             $query->search($search);
         }
 
-        if ($filterType === 'image') {
-            $query->whereHas('media', fn ($q) => $q->where('mime_type', 'like', 'image/%'));
-        } elseif ($filterType === 'video') {
-            $query->whereHas('media', fn ($q) => $q->where('mime_type', 'like', 'video/%'));
-        } elseif ($filterType === 'document') {
-            $query->whereHas('media', fn ($q) => $q->where('mime_type', 'not like', 'image/%')->where('mime_type', 'not like', 'video/%'));
-        }
-
+        $query->ofType($filterType);
         $query->orderByDesc('created_at');
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
@@ -46,6 +42,8 @@ class MediaPickerController extends Controller
 
     public function upload(Request $request): JsonResponse
     {
+        Gate::authorize('media-library.create');
+
         $acceptedTypes = config('filament-media-library.accepted_file_types', ['image/*', 'video/*', 'application/pdf']);
         $maxSize = config('filament-media-library.max_file_size', 10240);
 
@@ -68,13 +66,13 @@ class MediaPickerController extends Controller
             $originalName = $file->getClientOriginalName();
 
             if ($file->getSize() > $maxSize * 1024) {
-                $rejected[] = ['name' => $originalName, 'reason' => 'File exceeds maximum size'];
+                $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.file_too_large')];
 
                 continue;
             }
 
             if (! Media::mimeTypeMatchesAccepted($file->getMimeType() ?? '', $acceptedTypes)) {
-                $rejected[] = ['name' => $originalName, 'reason' => 'File type not accepted'];
+                $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.type_not_accepted')];
 
                 continue;
             }
@@ -95,10 +93,10 @@ class MediaPickerController extends Controller
 
                 $uploaded[] = $media->toPickerArray();
             } catch (\Throwable $e) {
-                $rejected[] = ['name' => $originalName, 'reason' => 'Upload failed'];
+                $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.upload_failed')];
 
                 if (isset($media) && $media->exists) {
-                    $media->forceDelete();
+                    $media->delete();
                 }
             }
         }
@@ -111,6 +109,8 @@ class MediaPickerController extends Controller
 
     public function show(Media $media): JsonResponse
     {
+        Gate::authorize('media-library.view', $media);
+
         $media->load('media');
 
         return response()->json([
@@ -120,6 +120,8 @@ class MediaPickerController extends Controller
 
     public function update(Request $request, Media $media): JsonResponse
     {
+        Gate::authorize('media-library.update', $media);
+
         $media->load('media');
 
         $validated = $request->validate([
@@ -138,8 +140,10 @@ class MediaPickerController extends Controller
 
     public function destroy(Media $media): JsonResponse
     {
+        Gate::authorize('media-library.delete', $media);
+
         $media->clearMediaCollection('default');
-        $media->forceDelete();
+        $media->delete();
 
         return response()->json([
             'success' => true,

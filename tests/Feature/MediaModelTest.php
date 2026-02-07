@@ -64,17 +64,17 @@ test('custom disk is preserved on creation', function (): void {
 // --- Relationships ---
 
 test('uploaded_by can be set', function (): void {
-    $user = \App\Models\User::first();
+    $user = createTestUser();
     $media = Media::create(['title' => 'Upload By', 'uploaded_by' => $user->id]);
 
     expect($media->uploaded_by)->toBe($user->id);
 });
 
 test('uploadedBy relationship returns user', function (): void {
-    $user = \App\Models\User::first();
+    $user = createTestUser();
     $media = Media::create(['title' => 'Relation Test', 'uploaded_by' => $user->id]);
 
-    expect($media->uploadedBy)->toBeInstanceOf(\App\Models\User::class);
+    expect($media->uploadedBy)->toBeInstanceOf(get_class($user));
     expect($media->uploadedBy->id)->toBe($user->id);
 });
 
@@ -82,29 +82,6 @@ test('uploadedBy returns null when no user set', function (): void {
     $media = Media::create(['title' => 'No User']);
 
     expect($media->uploadedBy)->toBeNull();
-});
-
-// --- Soft Deletes ---
-
-test('media soft deletes', function (): void {
-    $media = Media::create(['title' => 'Soft Delete']);
-    $id = $media->id;
-
-    $media->delete();
-
-    expect(Media::find($id))->toBeNull();
-    expect(Media::withTrashed()->find($id))->not->toBeNull();
-    expect(Media::withTrashed()->find($id)->trashed())->toBeTrue();
-});
-
-test('soft deleted media can be restored', function (): void {
-    $media = Media::create(['title' => 'Restore Test']);
-    $id = $media->id;
-
-    $media->delete();
-    Media::withTrashed()->find($id)->restore();
-
-    expect(Media::find($id))->not->toBeNull();
 });
 
 // --- Accessors without Spatie media ---

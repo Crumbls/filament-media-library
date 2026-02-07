@@ -12,7 +12,7 @@ beforeEach(function (): void {
     Storage::fake('public');
     config(['filament-media-library.disk' => 'public']);
 
-    $this->user = \App\Models\User::first();
+    $this->user = createTestUser();
     $this->actingAs($this->user);
 });
 
@@ -338,16 +338,16 @@ test('isUploading defaults to false', function (): void {
         ->assertSet('isUploading', false);
 });
 
-// --- deleteMedia force deletes ---
+// --- deleteMedia deletes permanently ---
 
-test('deleteMedia force deletes the record', function (): void {
-    $media = Media::create(['title' => 'Force Delete']);
+test('deleteMedia permanently deletes the record', function (): void {
+    $media = Media::create(['title' => 'Permanent Delete']);
     $id = $media->id;
 
     Livewire::test(ListMedia::class)
         ->call('deleteMedia', $id);
 
-    expect(Media::withTrashed()->find($id))->toBeNull();
+    expect(Media::find($id))->toBeNull();
 });
 
 // --- saveMediaDetail dispatches event ---

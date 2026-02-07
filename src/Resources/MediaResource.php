@@ -18,12 +18,12 @@ class MediaResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'Media';
+        return __('filament-media-library::media-library.resource.label');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'Media';
+        return __('filament-media-library::media-library.resource.plural');
     }
 
     public static function getNavigationGroup(): ?string
@@ -38,7 +38,7 @@ class MediaResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return config('filament-media-library.filament.navigation_label', 'Media Library');
+        return config('filament-media-library.filament.navigation_label', __('filament-media-library::media-library.resource.navigation_label'));
     }
 
     public static function getNavigationIcon(): string|\BackedEnum|null

@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('disk')->default('public');
             $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->softDeletes();
 
             $table->index('created_at');
         });

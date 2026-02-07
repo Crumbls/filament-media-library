@@ -10,7 +10,7 @@ beforeEach(function (): void {
     Storage::fake('public');
     config(['filament-media-library.disk' => 'public']);
 
-    $this->user = \App\Models\User::first();
+    $this->user = createTestUser();
     $this->actingAs($this->user);
 });
 
@@ -236,7 +236,7 @@ test('destroy removes media', function (): void {
     $response->assertOk();
     $response->assertJsonPath('success', true);
 
-    expect(Media::withTrashed()->find($media->id))->toBeNull();
+    expect(Media::find($media->id))->toBeNull();
 });
 
 test('destroy returns 404 for nonexistent media', function (): void {

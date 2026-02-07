@@ -427,6 +427,11 @@ vendor/bin/pint src config database tests
 vendor/bin/phpstan analyse --configuration=packages/filament-media-library/phpstan.neon
 ```
 
+### Roadmap
+Add throttling to uploads.
+Add lifecycle events.
+Add tenant scoping.
+
 ### Testing
 
 The package uses [Pest](https://pestphp.com/) with 197 tests:

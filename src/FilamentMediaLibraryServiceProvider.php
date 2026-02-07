@@ -7,6 +7,7 @@ namespace Crumbls\FilamentMediaLibrary;
 use Crumbls\FilamentMediaLibrary\Http\Controllers\MediaPickerController;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,9 +19,15 @@ class FilamentMediaLibraryServiceProvider extends ServiceProvider
 
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'filament-media-library');
 
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'filament-media-library');
+
         $this->publishes([
             __DIR__.'/../config/filament-media-library.php' => config_path('filament-media-library.php'),
         ], 'filament-media-library-config');
+
+        $this->publishes([
+            __DIR__.'/../resources/lang' => $this->app->langPath('vendor/filament-media-library'),
+        ], 'filament-media-library-translations');
 
         $this->publishes([
             __DIR__.'/../database/migrations/' => database_path('migrations'),
@@ -34,6 +41,28 @@ class FilamentMediaLibraryServiceProvider extends ServiceProvider
             Css::make('filament-media-library-styles', __DIR__.'/../resources/css/filament-media-library.css'),
         ], 'crumbls/filament-media-library');
 
+        $this->publishes([
+            __DIR__.'/../resources/css' => public_path('vendor/filament-media-library/css'),
+        ], 'filament-media-library-assets');
+
+        $this->registerGates();
+
+        if (config('filament-media-library.routes.enabled', true)) {
+            $this->registerRoutes();
+        }
+    }
+
+    private function registerGates(): void
+    {
+        $abilities = ['viewAny', 'view', 'create', 'update', 'delete'];
+
+        foreach ($abilities as $ability) {
+            Gate::define("media-library.{$ability}", fn ($user) => true);
+        }
+    }
+
+    private function registerRoutes(): void
+    {
         Route::middleware(['web', 'auth'])
             ->prefix('filament-media-library')
             ->group(function (): void {

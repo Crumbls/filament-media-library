@@ -14,6 +14,25 @@ if (! class_exists('FmlTestModel')) {
     }
 }
 
+function createTestUser(): Model
+{
+    if (class_exists(\Crumbls\FilamentMediaLibrary\Tests\Fixtures\User::class)) {
+        return \Crumbls\FilamentMediaLibrary\Tests\Fixtures\User::create([
+            'name' => 'Test User',
+            'email' => 'test-'.uniqid().'@example.com',
+            'password' => bcrypt('password'),
+        ]);
+    }
+
+    $userClass = config('auth.providers.users.model', \App\Models\User::class);
+
+    return $userClass::first() ?? $userClass::create([
+        'name' => 'Test User',
+        'email' => 'test-'.uniqid().'@example.com',
+        'password' => bcrypt('password'),
+    ]);
+}
+
 function createTestGifFile(): string
 {
     $path = tempnam(sys_get_temp_dir(), 'fml_test_');

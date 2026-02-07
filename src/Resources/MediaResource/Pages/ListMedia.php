@@ -12,6 +12,7 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
 use Livewire\Attributes\Validate;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -27,7 +28,7 @@ class ListMedia extends ListRecords
     {
         return [
             Action::make('uploadMedia')
-                ->label('Upload Files')
+                ->label(__('filament-media-library::media-library.actions.upload_files'))
                 ->icon('heroicon-m-arrow-up-tray')
                 ->action('toggleUploadZone'),
         ];
@@ -92,13 +93,13 @@ class ListMedia extends ListRecords
             $originalName = $file->getClientOriginalName();
 
             if ($file->getSize() > $maxSize * 1024) {
-                $rejected[] = ['name' => $originalName, 'reason' => 'File exceeds maximum size'];
+                $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.file_too_large')];
 
                 continue;
             }
 
             if (! Media::mimeTypeMatchesAccepted($file->getMimeType() ?? '', $acceptedTypes)) {
-                $rejected[] = ['name' => $originalName, 'reason' => 'File type not accepted'];
+                $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.type_not_accepted')];
 
                 continue;
             }
@@ -115,10 +116,10 @@ class ListMedia extends ListRecords
                     ->usingFileName($safeName)
                     ->toMediaCollection('default');
             } catch (\Throwable $e) {
-                $rejected[] = ['name' => $originalName, 'reason' => 'Upload failed'];
+                $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.upload_failed')];
 
                 if (isset($media) && $media->exists) {
-                    $media->forceDelete();
+                    $media->delete();
                 }
             }
         }
@@ -140,6 +141,9 @@ class ListMedia extends ListRecords
         }
 
         $media = Media::findOrFail($this->editingMediaId);
+
+        Gate::authorize('media-library.update', $media);
+
         $originalFileName = $media->getFirstMedia('default')?->file_name ?? 'edited-image.jpg';
 
         $media->clearMediaCollection('default');
@@ -167,13 +171,7 @@ class ListMedia extends ListRecords
             $query->search($this->gridSearch);
         }
 
-        if ($this->filterType === 'image') {
-            $query->whereHas('media', fn ($q) => $q->where('mime_type', 'like', 'image/%'));
-        } elseif ($this->filterType === 'video') {
-            $query->whereHas('media', fn ($q) => $q->where('mime_type', 'like', 'video/%'));
-        } elseif ($this->filterType === 'document') {
-            $query->whereHas('media', fn ($q) => $q->where('mime_type', 'not like', 'image/%')->where('mime_type', 'not like', 'video/%'));
-        }
+        $query->ofType($this->filterType);
 
         return $query->orderByDesc('created_at')->paginate($this->perPage, ['*'], 'page', $this->gridPage);
     }
@@ -225,6 +223,8 @@ class ListMedia extends ListRecords
 
         $media = Media::findOrFail($this->editingMediaId);
 
+        Gate::authorize('media-library.update', $media);
+
         $media->update([
             'title' => $this->editTitle,
             'alt_text' => $this->editAltText,
@@ -233,7 +233,7 @@ class ListMedia extends ListRecords
         ]);
 
         Notification::make()
-            ->title('Media details saved')
+            ->title(__('filament-media-library::media-library.notifications.details_saved'))
             ->success()
             ->send();
 
@@ -249,8 +249,11 @@ class ListMedia extends ListRecords
         }
 
         $media = Media::findOrFail($id);
+
+        Gate::authorize('media-library.delete', $media);
+
         $media->clearMediaCollection('default');
-        $media->forceDelete();
+        $media->delete();
 
         $this->closeMediaDetail();
     }

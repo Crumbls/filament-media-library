@@ -5,6 +5,26 @@
     $maxItems = $getMaxItems();
     $acceptedTypes = collect(config('filament-media-library.accepted_file_types', ['image/*', 'video/*', 'application/pdf']))->implode(',');
     $maxFileSize = config('filament-media-library.max_file_size', 10240);
+
+    $pickerTranslations = [
+        'failed_to_load' => __('filament-media-library::media-library.notifications.failed_to_load'),
+        'failed_to_load_details' => __('filament-media-library::media-library.notifications.failed_to_load_details'),
+        'details_saved' => __('filament-media-library::media-library.notifications.details_saved_short'),
+        'failed_to_save' => __('filament-media-library::media-library.notifications.failed_to_save'),
+        'file_deleted' => __('filament-media-library::media-library.notifications.file_deleted'),
+        'failed_to_delete' => __('filament-media-library::media-library.notifications.failed_to_delete'),
+        'upload_failed' => __('filament-media-library::media-library.notifications.upload_failed'),
+        'files_uploaded' => __('filament-media-library::media-library.messages.files_uploaded'),
+        'confirm_delete' => __('filament-media-library::media-library.messages.confirm_delete'),
+        'unknown' => __('filament-media-library::media-library.media_types.untitled'),
+        'uploaded' => __('filament-media-library::media-library.upload_status.uploaded'),
+        'failed' => __('filament-media-library::media-library.upload_status.failed'),
+        'uploading' => __('filament-media-library::media-library.upload_status.uploading'),
+        'items' => __('filament-media-library::media-library.messages.items_count'),
+        'selected' => __('filament-media-library::media-library.messages.selected_count'),
+        'saving' => __('filament-media-library::media-library.messages.saving'),
+        'loading' => __('filament-media-library::media-library.messages.loading'),
+    ];
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
@@ -35,6 +55,7 @@
             baseUrl: '{{ route('filament-media-library.media-picker') }}',
             uploadUrl: '{{ route('filament-media-library.media-picker.upload') }}',
             csrfToken: '{{ csrf_token() }}',
+            trans: @js($pickerTranslations),
 
             async loadMedia(reset = false) {
                 if (reset) {
@@ -65,7 +86,7 @@
                         this.total = result.total;
                     }
                 } catch (e) {
-                    this.showNotification('Failed to load media', 'error');
+                    this.showNotification(this.trans.failed_to_load, 'error');
                 }
 
                 this.loading = false;
@@ -131,7 +152,7 @@
                         };
                     }
                 } catch (e) {
-                    this.showNotification('Failed to load details', 'error');
+                    this.showNotification(this.trans.failed_to_load_details, 'error');
                 }
                 this.detailLoading = false;
             },
@@ -159,17 +180,17 @@
                                 title: result.data.title || result.data.file_name,
                             };
                         }
-                        this.showNotification('Details saved', 'success');
+                        this.showNotification(this.trans.details_saved, 'success');
                     }
                 } catch (e) {
-                    this.showNotification('Failed to save details', 'error');
+                    this.showNotification(this.trans.failed_to_save, 'error');
                 }
                 this.detailSaving = false;
             },
 
             async deleteItem() {
                 if (!this.activeItem) return;
-                if (!confirm('Are you sure you want to permanently delete this file?')) return;
+                if (!confirm(this.trans.confirm_delete)) return;
 
                 try {
                     await fetch(this.baseUrl + '/' + this.activeItem.id, {
@@ -186,9 +207,9 @@
                     this.selectedItems = this.selectedItems.filter(s => s.id !== deletedId);
                     this.activeItem = null;
                     this.total = Math.max(0, this.total - 1);
-                    this.showNotification('File deleted', 'success');
+                    this.showNotification(this.trans.file_deleted, 'success');
                 } catch (e) {
-                    this.showNotification('Failed to delete file', 'error');
+                    this.showNotification(this.trans.failed_to_delete, 'error');
                 }
             },
 
@@ -240,7 +261,7 @@
                     });
 
                     if (result.uploaded && result.uploaded.length > 0) {
-                        this.showNotification(result.uploaded.length + ' file(s) uploaded', 'success');
+                        this.showNotification(this.trans.files_uploaded.replace(':count', result.uploaded.length), 'success');
                         setTimeout(() => {
                             this.activeTab = 'library';
                             this.loadMedia(true);
@@ -250,10 +271,10 @@
                     this.uploadQueue.forEach(q => {
                         if (q.status === 'uploading') {
                             q.status = 'error';
-                            q.reason = 'Upload failed';
+                            q.reason = this.trans.upload_failed;
                         }
                     });
-                    this.showNotification('Upload failed', 'error');
+                    this.showNotification(this.trans.upload_failed, 'error');
                 }
 
                 this.uploading = false;
@@ -313,16 +334,22 @@
             },
 
             formatSize(bytes) {
-                if (!bytes) return 'Unknown';
+                if (!bytes) return this.trans.unknown;
                 if (bytes < 1024) return bytes + ' B';
                 if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
                 return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
             },
 
             formatDate(iso) {
-                if (!iso) return 'Unknown';
+                if (!iso) return this.trans.unknown;
                 const d = new Date(iso);
-                return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            },
+
+            uploadStatusText(item) {
+                if (item.status === 'success') return this.trans.uploaded;
+                if (item.status === 'error') return item.reason || this.trans.failed;
+                return this.trans.uploading;
             },
         }"
         class="space-y-2"
@@ -342,7 +369,7 @@
                     </template>
                 </div>
                 <button type="button" x-on:click="removeItem(selectedItems[0].id)" class="fml-picker-remove-link">
-                    Remove
+                    {{ __('filament-media-library::media-library.actions.remove') }}
                 </button>
             </div>
         </template>
@@ -377,7 +404,7 @@
             icon="heroicon-m-photo"
             size="md"
         >
-            {{ $isMultiple ? 'Select Media' : 'Choose Media' }}
+            {{ $isMultiple ? __('filament-media-library::media-library.actions.select_media') : __('filament-media-library::media-library.actions.choose_media') }}
         </x-filament::button>
 
         {{-- Modal --}}
@@ -396,7 +423,7 @@
                 >
                     {{-- Header --}}
                     <div class="fml-picker-header">
-                        <h2>Media Library</h2>
+                        <h2>{{ __('filament-media-library::media-library.headings.media_library') }}</h2>
                         <button type="button" x-on:click="closeModal()" class="fml-picker-close">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
                         </button>
@@ -409,13 +436,13 @@
                             x-on:click="switchTab('upload')"
                             :class="{ 'active': activeTab === 'upload' }"
                             class="fml-picker-tab"
-                        >Upload Files</button>
+                        >{{ __('filament-media-library::media-library.tabs.upload_files') }}</button>
                         <button
                             type="button"
                             x-on:click="switchTab('library')"
                             :class="{ 'active': activeTab === 'library' }"
                             class="fml-picker-tab"
-                        >Media Library</button>
+                        >{{ __('filament-media-library::media-library.tabs.media_library') }}</button>
                     </div>
 
                     {{-- Body --}}
@@ -436,10 +463,10 @@
                                         <div class="fml-picker-upload-icon">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
                                         </div>
-                                        <h3>Drop files to upload</h3>
-                                        <p>or</p>
+                                        <h3>{{ __('filament-media-library::media-library.messages.drop_files') }}</h3>
+                                        <p>{{ __('filament-media-library::media-library.messages.or') }}</p>
                                         <label class="fml-picker-select-btn">
-                                            Select Files
+                                            {{ __('filament-media-library::media-library.actions.select_files') }}
                                             <input
                                                 type="file"
                                                 multiple
@@ -448,13 +475,13 @@
                                                 style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);"
                                             />
                                         </label>
-                                        <p class="fml-upload-hint">Maximum file size: {{ $maxFileSize / 1024 }} MB</p>
+                                        <p class="fml-upload-hint">{{ __('filament-media-library::media-library.messages.max_file_size', ['size' => $maxFileSize / 1024]) }}</p>
                                     </div>
                                 </template>
                                 <template x-if="uploading">
                                     <div style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
                                         <div class="fml-picker-spinner"></div>
-                                        <p style="font-size: 0.875rem; font-weight: 500; color: rgb(107 114 128); margin: 0;">Uploading files...</p>
+                                        <p style="font-size: 0.875rem; font-weight: 500; color: rgb(107 114 128); margin: 0;">{{ __('filament-media-library::media-library.messages.uploading_files') }}</p>
                                     </div>
                                 </template>
                             </div>
@@ -468,7 +495,7 @@
                                             <span
                                                 class="fml-picker-upload-status"
                                                 :class="item.status"
-                                                x-text="item.status === 'success' ? 'Uploaded' : item.status === 'error' ? (item.reason || 'Failed') : 'Uploading...'"
+                                                x-text="uploadStatusText(item)"
                                             ></span>
                                         </div>
                                     </template>
@@ -487,19 +514,19 @@
                                         x-model="filterType"
                                         x-on:change="loadMedia(true)"
                                     >
-                                        <option value="">All Types</option>
-                                        <option value="image">Images</option>
-                                        <option value="video">Videos</option>
-                                        <option value="document">Documents</option>
+                                        <option value="">{{ __('filament-media-library::media-library.filters.all_types') }}</option>
+                                        <option value="image">{{ __('filament-media-library::media-library.filters.images') }}</option>
+                                        <option value="video">{{ __('filament-media-library::media-library.filters.videos') }}</option>
+                                        <option value="document">{{ __('filament-media-library::media-library.filters.documents') }}</option>
                                     </select>
                                     <input
                                         type="search"
                                         class="fml-picker-search"
-                                        placeholder="Search media..."
+                                        placeholder="{{ __('filament-media-library::media-library.placeholders.search_media') }}"
                                         x-model.debounce.300ms="search"
                                         x-on:input="loadMedia(true)"
                                     />
-                                    <span style="font-size: 0.8125rem; color: rgb(107 114 128); white-space: nowrap; margin-left: auto;" x-text="total + ' items'"></span>
+                                    <span style="font-size: 0.8125rem; color: rgb(107 114 128); white-space: nowrap; margin-left: auto;" x-text="trans.items.replace(':count', total)"></span>
                                 </div>
 
                                 {{-- Grid --}}
@@ -513,7 +540,7 @@
                                     <template x-if="!loading && mediaItems.length === 0">
                                         <div class="fml-picker-empty">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" /></svg>
-                                            <p>No media found</p>
+                                            <p>{{ __('filament-media-library::media-library.headings.no_media_found') }}</p>
                                         </div>
                                     </template>
 
@@ -545,8 +572,8 @@
 
                                     <div x-show="hasMore" class="fml-picker-load-more">
                                         <button type="button" x-on:click="loadMore()" :disabled="loading">
-                                            <span x-show="!loading">Load more</span>
-                                            <span x-show="loading">Loading...</span>
+                                            <span x-show="!loading">{{ __('filament-media-library::media-library.actions.load_more') }}</span>
+                                            <span x-show="loading">{{ __('filament-media-library::media-library.messages.loading') }}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -557,7 +584,7 @@
                                 <template x-if="!activeItem && !detailLoading">
                                     <div class="fml-picker-sidebar-empty">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
-                                        <p>Select an item to view details</p>
+                                        <p>{{ __('filament-media-library::media-library.messages.select_to_view') }}</p>
                                     </div>
                                 </template>
 
@@ -597,49 +624,49 @@
                                         {{-- File info --}}
                                         <div class="fml-picker-meta">
                                             <div class="fml-picker-meta-row" x-show="activeItem.file_name">
-                                                <span class="fml-picker-meta-label">File</span>
+                                                <span class="fml-picker-meta-label">{{ __('filament-media-library::media-library.labels.file') }}</span>
                                                 <span x-text="activeItem.file_name"></span>
                                             </div>
                                             <div class="fml-picker-meta-row" x-show="activeItem.mime_type">
-                                                <span class="fml-picker-meta-label">Type</span>
+                                                <span class="fml-picker-meta-label">{{ __('filament-media-library::media-library.labels.type') }}</span>
                                                 <span x-text="activeItem.mime_type"></span>
                                             </div>
                                             <div class="fml-picker-meta-row" x-show="activeItem.file_size">
-                                                <span class="fml-picker-meta-label">Size</span>
+                                                <span class="fml-picker-meta-label">{{ __('filament-media-library::media-library.labels.size') }}</span>
                                                 <span x-text="formatSize(activeItem.file_size)"></span>
                                             </div>
                                             <div class="fml-picker-meta-row" x-show="activeItem.created_at">
-                                                <span class="fml-picker-meta-label">Date</span>
+                                                <span class="fml-picker-meta-label">{{ __('filament-media-library::media-library.labels.date') }}</span>
                                                 <span x-text="formatDate(activeItem.created_at)"></span>
                                             </div>
                                         </div>
 
                                         {{-- Editable fields --}}
                                         <div class="fml-picker-field">
-                                            <label class="fml-picker-label">Title</label>
+                                            <label class="fml-picker-label">{{ __('filament-media-library::media-library.labels.title') }}</label>
                                             <input type="text" class="fml-picker-input" x-model="editFields.title" />
                                         </div>
                                         <div class="fml-picker-field">
-                                            <label class="fml-picker-label">Alt Text</label>
-                                            <input type="text" class="fml-picker-input" x-model="editFields.alt_text" placeholder="Describe this image for accessibility" />
+                                            <label class="fml-picker-label">{{ __('filament-media-library::media-library.labels.alt_text') }}</label>
+                                            <input type="text" class="fml-picker-input" x-model="editFields.alt_text" placeholder="{{ __('filament-media-library::media-library.placeholders.alt_text_hint') }}" />
                                         </div>
                                         <div class="fml-picker-field">
-                                            <label class="fml-picker-label">Caption</label>
+                                            <label class="fml-picker-label">{{ __('filament-media-library::media-library.labels.caption') }}</label>
                                             <textarea class="fml-picker-textarea" rows="2" x-model="editFields.caption"></textarea>
                                         </div>
                                         <div class="fml-picker-field">
-                                            <label class="fml-picker-label">Description</label>
+                                            <label class="fml-picker-label">{{ __('filament-media-library::media-library.labels.description') }}</label>
                                             <textarea class="fml-picker-textarea" rows="2" x-model="editFields.description"></textarea>
                                         </div>
 
                                         {{-- Actions --}}
                                         <div class="fml-picker-detail-actions">
                                             <x-filament::button x-on:click="saveDetail()" color="primary" size="sm" ::disabled="detailSaving">
-                                                <span x-show="!detailSaving">Save</span>
-                                                <span x-show="detailSaving">Saving...</span>
+                                                <span x-show="!detailSaving">{{ __('filament-media-library::media-library.actions.save') }}</span>
+                                                <span x-show="detailSaving">{{ __('filament-media-library::media-library.messages.saving') }}</span>
                                             </x-filament::button>
                                             <x-filament::button x-on:click="deleteItem()" color="danger" size="sm" outlined>
-                                                Delete
+                                                {{ __('filament-media-library::media-library.actions.delete') }}
                                             </x-filament::button>
                                         </div>
                                     </div>
@@ -650,13 +677,13 @@
 
                     {{-- Footer --}}
                     <div class="fml-picker-footer">
-                        <span class="fml-picker-footer-count" x-text="selected.length + ' selected'"></span>
+                        <span class="fml-picker-footer-count" x-text="trans.selected.replace(':count', selected.length)"></span>
                         <div class="fml-picker-footer-actions">
                             <x-filament::button x-on:click="closeModal()" color="gray">
-                                Cancel
+                                {{ __('filament-media-library::media-library.actions.cancel') }}
                             </x-filament::button>
                             <x-filament::button x-on:click="confirm()" color="primary">
-                                Confirm Selection
+                                {{ __('filament-media-library::media-library.actions.confirm_selection') }}
                             </x-filament::button>
                         </div>
                     </div>

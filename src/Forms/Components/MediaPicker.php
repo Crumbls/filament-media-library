@@ -93,6 +93,8 @@ class MediaPicker extends Field
 
     public function getAvailableMedia(string $search = '', int $page = 1, int $perPage = 24): array
     {
+        $perPage = min($perPage, 100);
+
         $query = Media::query()->with('media');
 
         if ($search) {

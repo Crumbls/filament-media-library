@@ -53,5 +53,16 @@
                 "Crumbls\\FilamentMediaLibrary\\FilamentMediaLibraryServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "lint": "pint",
+        "test:lint": "pint --test",
+        "test:unit": "pest",
+        "test:types": "phpstan",
+        "test": [
+            "@test:lint",
+            "@test:unit",
+            "@test:types"
+        ]
     }
 }
