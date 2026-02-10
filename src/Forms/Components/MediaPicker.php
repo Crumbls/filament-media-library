@@ -6,7 +6,9 @@ namespace Crumbls\FilamentMediaLibrary\Forms\Components;
 
 use Closure;
 use Crumbls\FilamentMediaLibrary\Models\Media;
+use Crumbls\FilamentMediaLibrary\Traits\HasMediaLibrary;
 use Filament\Forms\Components\Field;
+use Illuminate\Database\Eloquent\Model;
 
 class MediaPicker extends Field
 {
@@ -22,19 +24,41 @@ class MediaPicker extends Field
     {
         parent::setUp();
 
-        $this->afterStateHydrated(function (MediaPicker $component, $state): void {
-            if (is_null($state)) {
+        $this->afterStateHydrated(function (MediaPicker $component, ?Model $record): void {
+            if (!$record || !$this->modelHasMediaLibrary($record)) {
                 $component->state($component->isMultiple() ? [] : null);
+
+                return;
             }
+
+            $collection = $component->getCollection();
+            $ids = $record->mediaInCollection($collection)->pluck('media_library.id')->toArray();
+
+            $component->state($component->isMultiple() ? $ids : ($ids[0] ?? null));
         });
 
-        $this->dehydrateStateUsing(function (MediaPicker $component, $state) {
+        $this->dehydrated(false);
+
+        $this->saveRelationshipsUsing(function (MediaPicker $component, ?Model $record, $state): void {
+            if (!$record || !$this->modelHasMediaLibrary($record)) {
+                return;
+            }
+
+            $collection = $component->getCollection();
+
             if ($component->isMultiple()) {
-                return is_array($state) ? $state : [];
+                $ids = is_array($state) ? array_filter(array_map('intval', $state)) : [];
+            } else {
+                $ids = !empty($state) ? [(int) $state] : [];
             }
 
-            return $state;
+            $record->syncMedia($ids, $collection);
         });
+    }
+
+    protected function modelHasMediaLibrary(Model $model): bool
+    {
+        return in_array(HasMediaLibrary::class, class_uses_recursive($model));
     }
 
     public function multiple(bool|Closure $condition = true): static
