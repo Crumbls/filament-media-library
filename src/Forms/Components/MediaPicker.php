@@ -25,7 +25,7 @@ class MediaPicker extends Field
         parent::setUp();
 
         $this->afterStateHydrated(function (MediaPicker $component, ?Model $record): void {
-            if (!$record || !$this->modelHasMediaLibrary($record)) {
+            if (! $record || ! $this->modelHasMediaLibrary($record)) {
                 $component->state($component->isMultiple() ? [] : null);
 
                 return;
@@ -40,7 +40,7 @@ class MediaPicker extends Field
         $this->dehydrated(false);
 
         $this->saveRelationshipsUsing(function (MediaPicker $component, ?Model $record, $state): void {
-            if (!$record || !$this->modelHasMediaLibrary($record)) {
+            if (! $record || ! $this->modelHasMediaLibrary($record)) {
                 return;
             }
 
@@ -49,7 +49,7 @@ class MediaPicker extends Field
             if ($component->isMultiple()) {
                 $ids = is_array($state) ? array_filter(array_map('intval', $state)) : [];
             } else {
-                $ids = !empty($state) ? [(int) $state] : [];
+                $ids = ! empty($state) ? [(int) $state] : [];
             }
 
             $record->syncMedia($ids, $collection);
