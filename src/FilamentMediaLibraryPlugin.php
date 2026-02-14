@@ -10,6 +10,11 @@ use Filament\Panel;
 
 class FilamentMediaLibraryPlugin implements Plugin
 {
+    public static function make(): static
+    {
+        return app(static::class);
+    }
+
     public function getId(): string
     {
         return 'filament-media-library';
