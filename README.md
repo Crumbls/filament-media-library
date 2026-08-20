@@ -6,8 +6,8 @@ Built on top of [Spatie Media Library](https://github.com/spatie/laravel-mediali
 
 ## Requirements
 
-- PHP 8.2+
-- Laravel 12+
+- PHP 8.3+
+- Laravel 12 or 13
 - Filament 5+
 - Spatie Laravel Media Library 11+
 
@@ -439,6 +439,11 @@ The package uses [Pest](https://pestphp.com/) with 197 tests:
 ```bash
 vendor/bin/pest --test-directory packages/filament-media-library/tests --configuration packages/filament-media-library/phpunit.xml
 ```
+
+## Security
+
+Please follow the private vulnerability-reporting process in the
+[security policy](SECURITY.md).
 
 ## License
 

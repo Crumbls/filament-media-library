@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Crumbls\FilamentMediaLibrary\Traits\HasMediaLibrary;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,15 +17,15 @@ if (! class_exists('FmlTestModel')) {
 
 function createTestUser(): Model
 {
-    if (class_exists(\Crumbls\FilamentMediaLibrary\Tests\Fixtures\User::class)) {
-        return \Crumbls\FilamentMediaLibrary\Tests\Fixtures\User::create([
+    if (class_exists(Crumbls\FilamentMediaLibrary\Tests\Fixtures\User::class)) {
+        return Crumbls\FilamentMediaLibrary\Tests\Fixtures\User::create([
             'name' => 'Test User',
             'email' => 'test-'.uniqid().'@example.com',
             'password' => bcrypt('password'),
         ]);
     }
 
-    $userClass = config('auth.providers.users.model', \App\Models\User::class);
+    $userClass = config('auth.providers.users.model', User::class);
 
     return $userClass::first() ?? $userClass::create([
         'name' => 'Test User',

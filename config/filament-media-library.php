@@ -1,5 +1,7 @@
 <?php
 
+use Crumbls\FilamentMediaLibrary\Models\Media;
+
 return [
     'disk' => env('MEDIA_LIBRARY_DISK', 'public'),
 
@@ -16,7 +18,7 @@ return [
     'collections' => [],
 
     'models' => [
-        'media' => \Crumbls\FilamentMediaLibrary\Models\Media::class,
+        'media' => Media::class,
     ],
 
     'routes' => [

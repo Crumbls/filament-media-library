@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Crumbls\FilamentMediaLibrary\Models\Media;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 
 beforeEach(function (): void {
@@ -343,7 +344,7 @@ test('attaching same media to same collection throws unique constraint', functio
     $this->testModel->attachMedia($media, 'default');
 
     expect(fn () => $this->testModel->attachMedia($media, 'default'))
-        ->toThrow(\Illuminate\Database\UniqueConstraintViolationException::class);
+        ->toThrow(UniqueConstraintViolationException::class);
 });
 
 test('attaching same media to different collections is allowed', function (): void {

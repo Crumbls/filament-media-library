@@ -11,6 +11,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Url;
@@ -21,6 +22,8 @@ use Livewire\WithFileUploads;
 class ListMedia extends ListRecords
 {
     use WithFileUploads;
+
+    protected string $contentView = 'filament-media-library::pages.media-grid';
 
     protected static string $resource = MediaResource::class;
 
@@ -47,7 +50,7 @@ class ListMedia extends ListRecords
 
     public bool $showUploadZone = false;
 
-    /** @var array<TemporaryUploadedFile> */
+    /** @var array<mixed> */
     public array $uploads = [];
 
     public bool $isUploading = false;
@@ -98,7 +101,7 @@ class ListMedia extends ListRecords
                 continue;
             }
 
-            if (! Media::mimeTypeMatchesAccepted($file->getMimeType() ?? '', $acceptedTypes)) {
+            if (! Media::mimeTypeMatchesAccepted($file->getMimeType(), $acceptedTypes)) {
                 $rejected[] = ['name' => $originalName, 'reason' => __('filament-media-library::media-library.validation.type_not_accepted')];
 
                 continue;
@@ -144,7 +147,7 @@ class ListMedia extends ListRecords
 
         Gate::authorize('media-library.update', $media);
 
-        $originalFileName = $media->getFirstMedia('default')?->file_name ?? 'edited-image.jpg';
+        $originalFileName = $media->getFirstMedia('default')->file_name ?? 'edited-image.jpg';
 
         $media->clearMediaCollection('default');
         $media->addMedia($this->editedImage->getRealPath())
@@ -159,11 +162,19 @@ class ListMedia extends ListRecords
     {
         return $schema
             ->components([
-                View::make('filament-media-library::pages.media-grid'),
+                View::make($this->getContentView()),
             ]);
     }
 
-    public function getGridMedia(): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    /**
+     * @return view-string
+     */
+    private function getContentView(): string
+    {
+        return $this->contentView;
+    }
+
+    public function getGridMedia(): LengthAwarePaginator
     {
         $query = Media::query()->with('media');
 

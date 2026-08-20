@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use Crumbls\FilamentMediaLibrary\Models\Media;
 
 test('config has all expected top-level keys', function (): void {
     $config = config('filament-media-library');
@@ -42,7 +43,7 @@ test('config has accepted file types', function (): void {
 
 test('config has default media model', function (): void {
     expect(config('filament-media-library.models.media'))
-        ->toBe(\Crumbls\FilamentMediaLibrary\Models\Media::class);
+        ->toBe(Media::class);
 });
 
 test('config has filament navigation defaults', function (): void {

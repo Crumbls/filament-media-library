@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Crumbls\FilamentMediaLibrary\Models\Media;
 use Crumbls\FilamentMediaLibrary\Scopes\TenantScope;
+use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
     $this->user = createTestUser();
@@ -15,7 +16,7 @@ test('null config auto-detects from panel with tenancy', function (): void {
 
     Filament\Facades\Filament::shouldReceive('hasTenancy')->andReturn(true);
     Filament\Facades\Filament::shouldReceive('getTenant')
-        ->andReturn(new class
+        ->andReturn(new class extends Model
         {
             public function getKey(): int
             {
@@ -56,7 +57,7 @@ test('tenancy enabled filters by tenant id', function (): void {
 
     // Mock Filament::getTenant() to return tenant with id 1
     Filament\Facades\Filament::shouldReceive('getTenant')
-        ->andReturn(new class
+        ->andReturn(new class extends Model
         {
             public function getKey(): int
             {
@@ -78,7 +79,7 @@ test('tenant id is auto-populated on create when tenancy enabled', function (): 
     config(['filament-media-library.tenancy.enabled' => true]);
 
     Filament\Facades\Filament::shouldReceive('getTenant')
-        ->andReturn(new class
+        ->andReturn(new class extends Model
         {
             public function getKey(): int
             {
@@ -95,7 +96,7 @@ test('withoutGlobalScope bypasses tenant filtering', function (): void {
     config(['filament-media-library.tenancy.enabled' => true]);
 
     Filament\Facades\Filament::shouldReceive('getTenant')
-        ->andReturn(new class
+        ->andReturn(new class extends Model
         {
             public function getKey(): int
             {
@@ -121,7 +122,7 @@ test('cross-tenant isolation works', function (): void {
 
     // Simulate tenant A
     Filament\Facades\Filament::shouldReceive('getTenant')
-        ->andReturn(new class
+        ->andReturn(new class extends Model
         {
             public function getKey(): int
             {

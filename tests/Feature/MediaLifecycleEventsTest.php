@@ -26,7 +26,7 @@ test('MediaCreated event fires on create', function (): void {
 test('MediaUpdated event fires on update', function (): void {
     Event::fake([MediaUpdated::class]);
 
-    $media = Media::withoutEvents(fn () => Media::create(['title' => 'Before Update']));
+    $media = Media::create(['title' => 'Before Update']);
 
     $media->update(['title' => 'After Update']);
 
@@ -38,7 +38,7 @@ test('MediaUpdated event fires on update', function (): void {
 test('MediaDeleted event fires on delete', function (): void {
     Event::fake([MediaDeleted::class]);
 
-    $media = Media::withoutEvents(fn () => Media::create(['title' => 'Delete Me']));
+    $media = Media::create(['title' => 'Delete Me']);
 
     $media->delete();
 

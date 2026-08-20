@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+use Crumbls\FilamentMediaLibrary\FilamentMediaLibraryServiceProvider;
+use Illuminate\Support\ServiceProvider;
 
 test('config is merged into application', function (): void {
     expect(config('filament-media-library'))->not->toBeNull();
@@ -16,23 +18,23 @@ test('views are registered under correct namespace', function (): void {
 test('service provider is loaded', function (): void {
     $providers = app()->getLoadedProviders();
 
-    expect($providers)->toHaveKey(\Crumbls\FilamentMediaLibrary\FilamentMediaLibraryServiceProvider::class);
+    expect($providers)->toHaveKey(FilamentMediaLibraryServiceProvider::class);
 });
 
 test('config publish group is registered', function (): void {
-    $groups = \Illuminate\Support\ServiceProvider::$publishGroups ?? [];
+    $groups = ServiceProvider::$publishGroups ?? [];
 
     expect($groups)->toHaveKey('filament-media-library-config');
 });
 
 test('migrations publish group is registered', function (): void {
-    $groups = \Illuminate\Support\ServiceProvider::$publishGroups ?? [];
+    $groups = ServiceProvider::$publishGroups ?? [];
 
     expect($groups)->toHaveKey('filament-media-library-migrations');
 });
 
 test('views publish group is registered', function (): void {
-    $groups = \Illuminate\Support\ServiceProvider::$publishGroups ?? [];
+    $groups = ServiceProvider::$publishGroups ?? [];
 
     expect($groups)->toHaveKey('filament-media-library-views');
 });

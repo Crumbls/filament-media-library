@@ -9,6 +9,7 @@ use Crumbls\FilamentMediaLibrary\Models\Media;
 use Crumbls\FilamentMediaLibrary\Traits\HasMediaLibrary;
 use Filament\Forms\Components\Field;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class MediaPicker extends Field
 {
@@ -32,7 +33,7 @@ class MediaPicker extends Field
             }
 
             $collection = $component->getCollection();
-            $ids = $record->mediaInCollection($collection)->pluck('media_library.id')->toArray();
+            $ids = $component->mediaInCollection($record, $collection)->pluck('media_library.id')->toArray();
 
             $component->state($component->isMultiple() ? $ids : ($ids[0] ?? null));
         });
@@ -52,13 +53,32 @@ class MediaPicker extends Field
                 $ids = ! empty($state) ? [(int) $state] : [];
             }
 
-            $record->syncMedia($ids, $collection);
+            $component->syncMedia($record, $ids, $collection);
         });
     }
 
     protected function modelHasMediaLibrary(Model $model): bool
     {
         return in_array(HasMediaLibrary::class, class_uses_recursive($model));
+    }
+
+    private function mediaInCollection(Model $record, string $collection): MorphToMany
+    {
+        $relationship = call_user_func([$record, 'mediaInCollection'], $collection);
+
+        if (! $relationship instanceof MorphToMany) {
+            throw new \LogicException('The model mediaInCollection method must return a morph-to-many relationship.');
+        }
+
+        return $relationship;
+    }
+
+    /**
+     * @param  array<int, int>  $mediaIds
+     */
+    private function syncMedia(Model $record, array $mediaIds, string $collection): void
+    {
+        call_user_func([$record, 'syncMedia'], $mediaIds, $collection);
     }
 
     public function multiple(bool|Closure $condition = true): static

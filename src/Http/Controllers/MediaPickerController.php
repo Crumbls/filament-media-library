@@ -59,7 +59,7 @@ class MediaPickerController extends Controller
         foreach ($files as $file) {
             $media = null;
 
-            if (! $file || ! $file->isValid()) {
+            if (! $file->isValid()) {
                 continue;
             }
 

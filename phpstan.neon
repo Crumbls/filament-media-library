@@ -1,9 +1,10 @@
 includes:
-    - ../../vendor/larastan/larastan/extension.neon
+    - vendor/larastan/larastan/extension.neon
 
 parameters:
     paths:
         - src
+        - tests/Fixtures/User.php
     level: 5
     ignoreErrors:
     excludePaths:

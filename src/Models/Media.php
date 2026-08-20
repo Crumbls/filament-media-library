@@ -14,11 +14,24 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string|null $title
+ * @property string|null $alt_text
+ * @property string|null $caption
+ * @property string|null $description
+ * @property string $disk
+ * @property int|null $uploaded_by
+ * @property int|string|null $tenant_id
+ * @property Carbon|null $created_at
+ */
 class Media extends Model implements HasMedia
 {
     /** @use HasFactory<MediaFactory> */
@@ -119,11 +132,14 @@ class Media extends Model implements HasMedia
         $conversions = config('filament-media-library.image_conversions', []);
 
         foreach ($conversions as $name => $dimensions) {
-            $this->addMediaConversion($name)
+            $conversion = $this->addMediaConversion($name);
+
+            $conversion
                 ->width($dimensions['width'])
                 ->height($dimensions['height'])
-                ->sharpen(10)
-                ->nonQueued();
+                ->sharpen(10);
+
+            $conversion->nonQueued();
         }
     }
 
